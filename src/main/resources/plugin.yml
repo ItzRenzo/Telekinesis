@@ -1,0 +1,5 @@
+name: Telekinesis
+version: '1.0'
+main: net.itzrenzo.telekinesis.Telekinesis
+api-version: '1.21'
+authors: [ ItzRenzo ]
