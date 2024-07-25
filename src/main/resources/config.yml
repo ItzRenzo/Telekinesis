@@ -1,0 +1,11 @@
+# Telekinesis Config
+
+# Automatically enables auto pickup.
+default-enabled: true
+
+# Inventory Warning (ACTION_BAR, TITLE, OR CHAT).
+warning-method: CHAT
+
+# Drops items when inventory is full. If set to false it deletes the item from the world.
+# Recommended to turn off if your having performance issues.
+drop-items: true

@@ -1,5 +1,16 @@
 name: Telekinesis
-version: '1.0'
+version: '1.1'
 main: net.itzrenzo.telekinesis.Telekinesis
 api-version: '1.21'
 authors: [ ItzRenzo ]
+commands:
+  telekinesis:
+    description: Toggle Telekinesis or reload the plugin
+    usage: /<command> <on|off|reload>
+permissions:
+  telekinesis.use:
+    description: Allows the use of Telekinesis
+    default: op
+  telekinesis.reload:
+    description: Allows reloading the Telekinesis plugin
+    default: op

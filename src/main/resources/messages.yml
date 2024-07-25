@@ -1,0 +1,12 @@
+# Telekinesis Messages
+
+player-only-command: "&cThis command can only be used by players."
+usage: "&cUsage: /telekinesis <on|off|reload>"
+no-permission: "&cYou don't have permission to use this command."
+reload-success: "&aConfiguration reloaded successfully."
+telekinesis-enabled: "&aTelekinesis enabled."
+telekinesis-disabled: "&cTelekinesis disabled."
+container-not-empty: "&cThis container is not empty! Please empty it before breaking."
+
+# If your using ACTION_BAR use "§" instead of "&".
+inventory-full: "&cYour inventory is full!"
