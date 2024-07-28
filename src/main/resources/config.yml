@@ -9,3 +9,16 @@ warning-method: CHAT
 # Drops items when inventory is full. If set to false it deletes the item from the world.
 # Recommended to turn off if your having performance issues.
 drop-items: true
+
+# Enable experience orb auto pickup
+enable-experience-pickup: true
+
+# Enable experience pickup message
+enable-experience-pickup-message: false
+
+# Global blacklist for items (use lowercase material names)
+# Item IDs can be found in (https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html)
+# Example.
+# global-blacklist:
+#   - dirt
+global-blacklist: []

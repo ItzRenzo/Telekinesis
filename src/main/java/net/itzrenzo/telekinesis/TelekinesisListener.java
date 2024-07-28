@@ -2,16 +2,16 @@ package net.itzrenzo.telekinesis;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Location;
+import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.block.Container;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Collection;
 
@@ -43,6 +43,18 @@ public class TelekinesisListener implements Listener {
             Collection<ItemStack> drops = event.getBlock().getDrops(player.getInventory().getItemInMainHand());
             handleDrops(player, drops, event.getBlock().getLocation());
             event.setDropItems(false);
+
+            // Handle experience drops
+            if (plugin.isExperiencePickupEnabled()) {
+                int expToDrop = event.getExpToDrop();
+                if (expToDrop > 0) {
+                    player.giveExp(expToDrop);
+                    if (plugin.isExperiencePickupMessageEnabled()) {
+                        sendExperiencePickupMessage(player, expToDrop);
+                    }
+                    event.setExpToDrop(0);
+                }
+            }
         }
     }
 
@@ -52,31 +64,72 @@ public class TelekinesisListener implements Listener {
         if (player != null && plugin.isTelekinesisEnabled(player)) {
             handleDrops(player, event.getDrops(), event.getEntity().getLocation());
             event.getDrops().clear();
+
+            // Handle experience drops
+            if (plugin.isExperiencePickupEnabled()) {
+                int expToDrop = event.getDroppedExp();
+                if (expToDrop > 0) {
+                    player.giveExp(expToDrop);
+                    if (plugin.isExperiencePickupMessageEnabled()) {
+                        sendExperiencePickupMessage(player, expToDrop);
+                    }
+                    event.setDroppedExp(0);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onEntityPickupItem(EntityPickupItemEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if (plugin.isTelekinesisEnabled(player)) {
+                ItemStack item = event.getItem().getItemStack();
+                if (!plugin.isItemBlacklisted(player, item.getType().name().toLowerCase())) {
+                    event.setCancelled(true);
+                    if (player.getInventory().firstEmpty() != -1) {
+                        player.getInventory().addItem(item);
+                        event.getItem().remove();
+                    } else {
+                        sendInventoryFullWarning(player);
+                    }
+                }
+            }
         }
     }
 
     private void handleDrops(Player player, Collection<ItemStack> drops, Location location) {
         for (ItemStack item : drops) {
             if (item != null && item.getAmount() > 0) {
-                if (player.getInventory().firstEmpty() == -1) {
-                    sendInventoryFullWarning(player);
-                    if (plugin.getConfig().getBoolean("drop-items", true)) {
-                        location.getWorld().dropItemNaturally(location, item);
+                if (!plugin.isItemBlacklisted(player, item.getType().name().toLowerCase())) {
+                    if (player.getInventory().firstEmpty() == -1) {
+                        sendInventoryFullWarning(player);
+                        if (plugin.getConfig().getBoolean("drop-items", true)) {
+                            location.getWorld().dropItemNaturally(location, item);
+                        }
+                    } else {
+                        player.getInventory().addItem(item);
                     }
                 } else {
-                    player.getInventory().addItem(item);
+                    location.getWorld().dropItemNaturally(location, item);
                 }
             }
         }
     }
 
     private void sendInventoryFullWarning(Player player) {
-        String message = ChatColor.translateAlternateColorCodes('&', plugin.getMessages().getString("inventory-full"));
+        String message = plugin.getColoredMessage("inventory-full");
         sendWarning(player, message);
     }
 
     private void sendContainerNotEmptyWarning(Player player) {
-        String message = ChatColor.translateAlternateColorCodes('&', plugin.getMessages().getString("container-not-empty"));
+        String message = plugin.getColoredMessage("container-not-empty");
+        sendWarning(player, message);
+    }
+
+    private void sendExperiencePickupMessage(Player player, int amount) {
+        String message = plugin.getColoredMessage("experience-pickup")
+                .replace("{amount}", String.valueOf(amount));
         sendWarning(player, message);
     }
 

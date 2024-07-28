@@ -1,7 +1,7 @@
 # Telekinesis Messages
 
 player-only-command: "&cThis command can only be used by players."
-usage: "&cUsage: /telekinesis <on|off|reload>"
+usage: "&cUsage: /telekinesis <on|off|reload|blacklist>"
 no-permission: "&cYou don't have permission to use this command."
 reload-success: "&aConfiguration reloaded successfully."
 telekinesis-enabled: "&aTelekinesis enabled."
@@ -10,3 +10,13 @@ container-not-empty: "&cThis container is not empty! Please empty it before brea
 
 # If your using ACTION_BAR use "§" instead of "&".
 inventory-full: "&cYour inventory is full!"
+
+# Blacklist messages v1.1
+blacklist-usage: "&cUsage: /telekinesis blacklist <item|list>"
+blacklist-added: "&aAdded {item} to your personal blacklist."
+blacklist-removed: "&aRemoved {item} from your personal blacklist."
+blacklist-empty: "&eYour personal blacklist is empty."
+blacklist-header: "&eYour personal blacklist:"
+blacklist-item: "&7- {item}"
+
+experience-pickup: "&aYou picked up {amount} experience."

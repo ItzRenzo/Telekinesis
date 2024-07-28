@@ -1,16 +1,22 @@
 name: Telekinesis
 version: '1.1'
 main: net.itzrenzo.telekinesis.Telekinesis
-api-version: '1.21'
+api-version: '1.17'
 authors: [ ItzRenzo ]
 commands:
   telekinesis:
-    description: Toggle Telekinesis or reload the plugin
-    usage: /<command> <on|off|reload>
+    description: Toggle Telekinesis, reload the plugin, or manage blacklist
+    usage: /<command> <on|off|reload|blacklist>
 permissions:
   telekinesis.use:
     description: Allows the use of Telekinesis
     default: op
   telekinesis.reload:
     description: Allows reloading the Telekinesis plugin
+    default: op
+  telekinesis.blacklist:
+    description: Allows managing personal blacklist
+    default: op
+  telekinesis.blacklist.list:
+    description: Allows listing personal blacklisted items
     default: op
