@@ -1,5 +1,6 @@
 package net.itzrenzo.telekinesis;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.command.Command;
@@ -11,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 
 public class Telekinesis extends JavaPlugin {
@@ -19,6 +21,7 @@ public class Telekinesis extends JavaPlugin {
     private Map<UUID, Boolean> playerStates;
     private Map<UUID, Set<String>> playerBlacklists;
     private Set<String> globalBlacklist;
+    private UpdateChecker updateChecker;
 
     @Override
     public void onEnable() {
@@ -28,6 +31,10 @@ public class Telekinesis extends JavaPlugin {
         loadConfigurations();
         getServer().getPluginManager().registerEvents(new TelekinesisListener(this), this);
         getCommand("telekinesis").setExecutor(this);
+        getCommand("telekinesis").setTabCompleter(new TelekinesisTabCompleter());
+
+
+        initUpdateChecker();
     }
 
     @Override
@@ -83,6 +90,15 @@ public class Telekinesis extends JavaPlugin {
         return true;
     }
 
+    private void initUpdateChecker() {
+        int resourceId = 118038;
+        Duration checkInterval = Duration.ofHours(24); // Check for updates once a day
+        updateChecker = new UpdateChecker(this, resourceId, checkInterval);
+
+        // Schedule the update check to run periodically
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, updateChecker::checkForUpdates, 0L, 20L * 60 * 60 * 24); // Run every 24 hours
+    }
+
     private void handleBlacklistCommand(Player player, String[] args) {
         if (args.length < 2) {
             player.sendMessage(getColoredMessage("blacklist-usage"));
@@ -100,17 +116,29 @@ public class Telekinesis extends JavaPlugin {
             return;
         }
 
-        String item = subCommand;
+        String itemsubCommand = args[2].toLowerCase();
+        String item = itemsubCommand;
         Set<String> blacklist = playerBlacklists.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>());
 
-        if (blacklist.contains(item)) {
-            blacklist.remove(item);
-            player.sendMessage(getColoredMessage("blacklist-removed").replace("{item}", item));
-        } else {
-            blacklist.add(item);
-            player.sendMessage(getColoredMessage("blacklist-added").replace("{item}", item));
+        if (subCommand.equals("add")) {
+            if (player.hasPermission("telekinesis.blacklist")) {
+                blacklist.add(item);
+                player.sendMessage(getColoredMessage("blacklist-added").replace("{item}", item));
+            } else {
+                player.sendMessage(getColoredMessage("no-permission"));
+            }
+            return;
         }
 
+        if (subCommand.equals("remove")) {
+            if (player.hasPermission("telekinesis.blacklist")) {
+                blacklist.remove(item);
+                player.sendMessage(getColoredMessage("blacklist-removed").replace("{item}", item));
+            } else {
+                player.sendMessage(getColoredMessage("no-permission"));
+            }
+            return;
+        }
         savePlayerBlacklists();
     }
 

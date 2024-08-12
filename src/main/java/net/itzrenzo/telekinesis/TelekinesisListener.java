@@ -3,6 +3,8 @@ package net.itzrenzo.telekinesis;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,22 +15,46 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 public class TelekinesisListener implements Listener {
     private final Telekinesis plugin;
+    private final List<Material> shulkerBoxMaterials;
 
     public TelekinesisListener(Telekinesis plugin) {
         this.plugin = plugin;
+        this.shulkerBoxMaterials = Arrays.asList(
+                Material.SHULKER_BOX,
+                Material.WHITE_SHULKER_BOX,
+                Material.ORANGE_SHULKER_BOX,
+                Material.MAGENTA_SHULKER_BOX,
+                Material.LIGHT_BLUE_SHULKER_BOX,
+                Material.YELLOW_SHULKER_BOX,
+                Material.LIME_SHULKER_BOX,
+                Material.PINK_SHULKER_BOX,
+                Material.GRAY_SHULKER_BOX,
+                Material.LIGHT_GRAY_SHULKER_BOX,
+                Material.CYAN_SHULKER_BOX,
+                Material.PURPLE_SHULKER_BOX,
+                Material.BLUE_SHULKER_BOX,
+                Material.BROWN_SHULKER_BOX,
+                Material.GREEN_SHULKER_BOX,
+                Material.RED_SHULKER_BOX,
+                Material.BLACK_SHULKER_BOX
+        );
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         if (plugin.isTelekinesisEnabled(player)) {
-            // Check if the block is a container
-            if (event.getBlock().getState() instanceof Container) {
-                Container container = (Container) event.getBlock().getState();
+            Block block = event.getBlock();
+
+            // Check if the block is a container, but not a Shulker Box
+            if (block.getState() instanceof Container && !isShulkerBox(block)) {
+                Container container = (Container) block.getState();
                 Inventory inventory = container.getInventory();
 
                 // Check if the container is not empty
@@ -39,9 +65,9 @@ public class TelekinesisListener implements Listener {
                 }
             }
 
-            // Handle regular block drops
-            Collection<ItemStack> drops = event.getBlock().getDrops(player.getInventory().getItemInMainHand());
-            handleDrops(player, drops, event.getBlock().getLocation());
+            // Handle regular block drops (including Shulker Boxes)
+            Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
+            handleDrops(player, drops, block.getLocation());
             event.setDropItems(false);
 
             // Handle experience drops
@@ -56,6 +82,10 @@ public class TelekinesisListener implements Listener {
                 }
             }
         }
+    }
+
+    private boolean isShulkerBox(Block block) {
+        return shulkerBoxMaterials.contains(block.getType());
     }
 
     @EventHandler
