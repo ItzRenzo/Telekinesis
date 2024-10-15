@@ -6,8 +6,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -46,7 +48,7 @@ public class TelekinesisListener implements Listener {
         );
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         if (plugin.isTelekinesisEnabled(player)) {
@@ -65,10 +67,16 @@ public class TelekinesisListener implements Listener {
                 }
             }
 
-            // Handle regular block drops (including Shulker Boxes)
-            Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
-            handleDrops(player, drops, block.getLocation());
-            event.setDropItems(false);
+            // Special handling for beds
+            if (block.getBlockData() instanceof Bed) {
+                event.setCancelled(true);
+                handleBedBreak(player, block);
+            } else {
+                // Handle regular block drops (including Shulker Boxes)
+                Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
+                handleDrops(player, drops, block.getLocation());
+                event.setDropItems(false);
+            }
 
             // Handle experience drops
             if (plugin.isExperiencePickupEnabled()) {
@@ -82,6 +90,37 @@ public class TelekinesisListener implements Listener {
                 }
             }
         }
+    }
+
+    private void handleBedBreak(Player player, Block block) {
+        Bed bed = (Bed) block.getBlockData();
+        Block bedHead;
+        Block bedFoot;
+
+        if (bed.getPart() == Bed.Part.HEAD) {
+            bedHead = block;
+            bedFoot = block.getRelative(bed.getFacing().getOppositeFace());
+        } else {
+            bedFoot = block;
+            bedHead = block.getRelative(bed.getFacing());
+        }
+
+        // Create the bed item using the head part's material
+        Material bedMaterial = bedHead.getType();
+        ItemStack bedItem = new ItemStack(bedMaterial);
+
+        // Add the bed directly to the player's inventory or drop it if inventory is full
+        if (player.getInventory().addItem(bedItem).isEmpty()) {
+            // Item was added successfully
+        } else {
+            // Inventory is full, drop the item
+            player.getWorld().dropItemNaturally(player.getLocation(), bedItem);
+            sendInventoryFullWarning(player);
+        }
+
+        // Remove both parts of the bed
+        bedHead.setType(Material.AIR);
+        bedFoot.setType(Material.AIR);
     }
 
     private boolean isShulkerBox(Block block) {
