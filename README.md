@@ -15,3 +15,6 @@ telekinesis.blacklist # Allows managing personal blacklist
 telekinesis.blacklist.list # Allows listing personal blacklisted items
 
 Discord Support: https://discord.gg/fpBfCYBDmZ
+
+Spigot : https://www.spigotmc.org/resources/telekinesis-auto-pick-up-plugin-1-17-1-21-3.118038/
+Polymart: https://polymart.org/resource/telekinesis.6707
