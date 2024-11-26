@@ -27,7 +27,7 @@ public class Telekinesis extends JavaPlugin {
     public void onEnable() {
         getLogger().info("Telekinesis has been enabled!");
         playerStates = new HashMap<>();
-        playerBlacklists = new HashMap<>(); // Initialize playerBlacklists here
+        playerBlacklists = new HashMap<>();
         loadConfigurations();
         getServer().getPluginManager().registerEvents(new TelekinesisListener(this), this);
         getCommand("telekinesis").setExecutor(this);
@@ -92,10 +92,9 @@ public class Telekinesis extends JavaPlugin {
 
     private void initUpdateChecker() {
         int resourceId = 118038;
-        Duration checkInterval = Duration.ofHours(24); // Check for updates once a day
+        Duration checkInterval = Duration.ofHours(24);
         updateChecker = new UpdateChecker(this, resourceId, checkInterval);
 
-        // Schedule the update check to run periodically
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, updateChecker::checkForUpdates, 0L, 20L * 60 * 60 * 24); // Run every 24 hours
     }
 

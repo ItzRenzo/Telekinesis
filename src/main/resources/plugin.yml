@@ -1,8 +1,9 @@
 name: Telekinesis
-version: '1.4'
+version: '1.5'
 main: net.itzrenzo.telekinesis.Telekinesis
 api-version: '1.17'
 authors: [ ItzRenzo ]
+soft-depend: [WorldGuard]
 commands:
   telekinesis:
     description: Toggle Telekinesis, reload the plugin, or manage blacklist

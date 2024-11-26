@@ -1,7 +1,16 @@
 package net.itzrenzo.telekinesis;
 
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldguard.LocalPlayer;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.association.RegionAssociable;
+import com.sk89q.worldguard.protection.flags.Flags;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -51,7 +60,7 @@ public class TelekinesisListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (plugin.isTelekinesisEnabled(player)) {
+        if (plugin.isTelekinesisEnabled(player) && canBreakBlock(player, event.getBlock().getLocation())) {
             Block block = event.getBlock();
 
             // Check if the block is a container, but not a Shulker Box
@@ -92,6 +101,21 @@ public class TelekinesisListener implements Listener {
         }
     }
 
+    private boolean canBreakBlock(Player player, Location location) {
+        if (isWorldGuardAvailable()) {
+            try {
+                RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+                RegionQuery query = container.createQuery();
+                com.sk89q.worldedit.util.Location loc = BukkitAdapter.adapt(location);
+                return query.testBuild(loc, WorldGuardPlugin.inst().wrapPlayer(player), Flags.BLOCK_BREAK);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to check WorldGuard permissions: " + e.getMessage());
+            }
+        }
+        return true;
+    }
+
+
     private void handleBedBreak(Player player, Block block) {
         Bed bed = (Bed) block.getBlockData();
         Block bedHead;
@@ -122,6 +146,11 @@ public class TelekinesisListener implements Listener {
         bedHead.setType(Material.AIR);
         bedFoot.setType(Material.AIR);
     }
+
+    private boolean isWorldGuardAvailable() {
+        return Bukkit.getPluginManager().getPlugin("WorldGuard") != null;
+    }
+
 
     private boolean isShulkerBox(Block block) {
         return shulkerBoxMaterials.contains(block.getType());
