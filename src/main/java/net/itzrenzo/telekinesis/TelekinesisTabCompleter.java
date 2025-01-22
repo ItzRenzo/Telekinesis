@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class TelekinesisTabCompleter implements TabCompleter {
 
-    private static final List<String> FIRST_ARGUMENTS = Arrays.asList("on", "off", "blacklist");
+    private static final List<String> FIRST_ARGUMENTS = Arrays.asList("on", "off", "blacklist", "reload");
     private static final List<String> BLACKLIST_ACTIONS = Arrays.asList("add", "remove", "list");
     private static final List<String> MATERIAL_NAMES;
 

@@ -194,6 +194,10 @@ public class Telekinesis extends JavaPlugin {
         }
     }
 
+    public boolean isMythicMobsPickupEnabled() {
+        return config.getBoolean("enable-mythicmobs-pickup", true);
+    }
+
     public boolean isTelekinesisEnabled(Player player) {
         return player.getGameMode() != GameMode.CREATIVE &&
                 playerStates.getOrDefault(player.getUniqueId(), config.getBoolean("default-enabled"));

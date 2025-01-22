@@ -1,5 +1,8 @@
 package net.itzrenzo.telekinesis;
 
+import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.mobs.ActiveMob;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.WorldGuard;
@@ -14,6 +17,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.entity.Player;
@@ -26,9 +30,11 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class TelekinesisListener implements Listener {
     private final Telekinesis plugin;
@@ -60,45 +66,95 @@ public class TelekinesisListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (plugin.isTelekinesisEnabled(player) && canBreakBlock(player, event.getBlock().getLocation())) {
-            Block block = event.getBlock();
+        if (!plugin.isTelekinesisEnabled(player) || !canBreakBlock(player, event.getBlock().getLocation())) {
+            return;
+        }
+        Block block = event.getBlock();
+        Material type = block.getType();
 
-            // Check if the block is a container, but not a Shulker Box
-            if (block.getState() instanceof Container && !isShulkerBox(block)) {
-                Container container = (Container) block.getState();
-                Inventory inventory = container.getInventory();
+        // Handle plants first
+        if (type == Material.KELP || type == Material.KELP_PLANT || type == Material.SUGAR_CANE || type == Material.CACTUS || type == Material.BAMBOO) {
+            handlePlantBreak(player, block, event);
+            return;
+        }
 
-                // Check if the container is not empty
-                if (!inventory.isEmpty()) {
-                    event.setCancelled(true);
-                    sendContainerNotEmptyWarning(player);
-                    return;
-                }
-            }
+        // Check if the block is a container, but not a Shulker Box
+        if (block.getState() instanceof Container && !isShulkerBox(block)) {
+            Container container = (Container) block.getState();
+            Inventory inventory = container.getInventory();
 
-            // Special handling for beds
-            if (block.getBlockData() instanceof Bed) {
+            // Check if the container is not empty
+            if (!inventory.isEmpty()) {
                 event.setCancelled(true);
-                handleBedBreak(player, block);
-            } else {
-                // Handle regular block drops (including Shulker Boxes)
-                Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
-                handleDrops(player, drops, block.getLocation());
-                event.setDropItems(false);
-            }
-
-            // Handle experience drops
-            if (plugin.isExperiencePickupEnabled()) {
-                int expToDrop = event.getExpToDrop();
-                if (expToDrop > 0) {
-                    player.giveExp(expToDrop);
-                    if (plugin.isExperiencePickupMessageEnabled()) {
-                        sendExperiencePickupMessage(player, expToDrop);
-                    }
-                    event.setExpToDrop(0);
-                }
+                sendContainerNotEmptyWarning(player);
+                return;
             }
         }
+
+        // Special handling for beds
+        if (block.getBlockData() instanceof Bed) {
+            event.setCancelled(true);
+            handleBedBreak(player, block);
+        } else {
+            // Handle regular block drops (including Shulker Boxes)
+            Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
+            handleDrops(player, drops, block.getLocation());
+            event.setDropItems(false);
+        }
+
+        // Handle experience drops
+        if (plugin.isExperiencePickupEnabled()) {
+            int expToDrop = event.getExpToDrop();
+            if (expToDrop > 0) {
+                player.giveExp(expToDrop);
+                if (plugin.isExperiencePickupMessageEnabled()) {
+                    sendExperiencePickupMessage(player, expToDrop);
+                }
+                event.setExpToDrop(0);
+            }
+        }
+    }
+
+    private void handlePlantBreak(Player player, Block block, BlockBreakEvent event) {
+        Material type = block.getType();
+        if (type == Material.KELP || type == Material.KELP_PLANT || type == Material.BAMBOO || type == Material.CACTUS || type == Material.SUGAR_CANE) {
+            List<Block> blocksToBreak = new ArrayList<>();
+            Block current = block;
+
+            // Only break blocks ABOVE the broken one
+            do {
+                blocksToBreak.add(current);
+                current = current.getRelative(BlockFace.UP);
+            } while (isSameVerticalPlant(current, type));
+
+            List<ItemStack> totalDrops = new ArrayList<>();
+            for (Block b : blocksToBreak) {
+                totalDrops.addAll(b.getDrops(player.getInventory().getItemInMainHand()));
+                b.setType((b.getType() == Material.KELP || b.getType() == Material.KELP_PLANT) ? Material.WATER : Material.AIR);
+            }
+
+            handleDrops(player, totalDrops, block.getLocation());
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean isSameVerticalPlant(Block block, Material original) {
+        Material check = block.getType();
+        if (original == Material.KELP || original == Material.KELP_PLANT) {
+            return check == Material.KELP || check == Material.KELP_PLANT;
+        }
+        return check == original;
+    }
+
+    private boolean isValidGround(Material plantType, Material groundType) {
+        if (plantType == Material.SUGAR_CANE) {
+            return groundType == Material.GRASS_BLOCK || groundType == Material.DIRT
+                    || groundType == Material.SAND || groundType == Material.RED_SAND;
+        } else if (plantType == Material.BAMBOO) {
+            return groundType == Material.GRASS_BLOCK || groundType == Material.DIRT
+                    || groundType == Material.SAND || groundType == Material.BAMBOO_SAPLING;
+        }
+        return true;
     }
 
     private boolean canBreakBlock(Player player, Location location) {
@@ -114,7 +170,6 @@ public class TelekinesisListener implements Listener {
         }
         return true;
     }
-
 
     private void handleBedBreak(Player player, Block block) {
         Bed bed = (Bed) block.getBlockData();
@@ -159,20 +214,28 @@ public class TelekinesisListener implements Listener {
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         Player player = event.getEntity().getKiller();
-        if (player != null && plugin.isTelekinesisEnabled(player)) {
-            handleDrops(player, event.getDrops(), event.getEntity().getLocation());
-            event.getDrops().clear();
+        if (player == null || !plugin.isTelekinesisEnabled(player)) return;
 
-            // Handle experience drops
-            if (plugin.isExperiencePickupEnabled()) {
-                int expToDrop = event.getDroppedExp();
-                if (expToDrop > 0) {
-                    player.giveExp(expToDrop);
-                    if (plugin.isExperiencePickupMessageEnabled()) {
-                        sendExperiencePickupMessage(player, expToDrop);
-                    }
-                    event.setDroppedExp(0);
+        // Check if MythicMobs is installed and the mob is a MythicMob
+        boolean isMythicMob = Bukkit.getPluginManager().getPlugin("MythicMobs") != null
+                && MythicBukkit.inst().getMobManager().isMythicMob(event.getEntity());
+
+        // Skip vanilla drops if PreventOtherDrops is active (handled in MythicMobDeathEvent)
+        if (isMythicMob) return;
+
+        // Handle vanilla drops for non-MythicMobs entities
+        handleDrops(player, event.getDrops(), event.getEntity().getLocation());
+        event.getDrops().clear();
+
+        // Handle experience (unchanged)
+        if (plugin.isExperiencePickupEnabled()) {
+            int expToDrop = event.getDroppedExp();
+            if (expToDrop > 0) {
+                player.giveExp(expToDrop);
+                if (plugin.isExperiencePickupMessageEnabled()) {
+                    sendExperiencePickupMessage(player, expToDrop);
                 }
+                event.setDroppedExp(0);
             }
         }
     }
@@ -212,6 +275,28 @@ public class TelekinesisListener implements Listener {
                     location.getWorld().dropItemNaturally(location, item);
                 }
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMythicMobDeath(MythicMobDeathEvent event) {
+        Player player = (Player) event.getKiller();
+        if (player == null || !plugin.isTelekinesisEnabled(player) || !plugin.isMythicMobsPickupEnabled()) {
+            return; // Skip if MythicMobs pickup is disabled
+        }
+
+        // Check if PreventOtherDrops is enabled for this mob
+        boolean preventOtherDrops = event.getMobType().getConfig().getBoolean("Options.PreventOtherDrops", false);
+
+        // Get MythicMobs drops (custom drops)
+        List<ItemStack> mythicDrops = new ArrayList<>(event.getDrops());
+        handleDrops(player, mythicDrops, event.getEntity().getLocation());
+        event.getDrops().clear();
+
+        // If PreventOtherDrops is enabled, also clear vanilla drops
+        if (preventOtherDrops) {
+            event.getEntity().getWorld().getLivingEntities().remove(event.getEntity());
+            event.getEntity().remove();
         }
     }
 
