@@ -216,9 +216,11 @@ public class TelekinesisListener implements Listener {
         Player player = event.getEntity().getKiller();
         if (player == null || !plugin.isTelekinesisEnabled(player)) return;
 
-        // Check if MythicMobs is installed and the mob is a MythicMob
-        boolean isMythicMob = Bukkit.getPluginManager().getPlugin("MythicMobs") != null
-                && MythicBukkit.inst().getMobManager().isMythicMob(event.getEntity());
+        // Check if MythicMobs is installed before accessing its classes
+        boolean isMythicMob = false;
+        if (Bukkit.getPluginManager().getPlugin("MythicMobs") != null) {
+            isMythicMob = MythicBukkit.inst().getMobManager().isMythicMob(event.getEntity());
+        }
 
         // Skip vanilla drops if PreventOtherDrops is active (handled in MythicMobDeathEvent)
         if (isMythicMob) return;
@@ -227,7 +229,6 @@ public class TelekinesisListener implements Listener {
         handleDrops(player, event.getDrops(), event.getEntity().getLocation());
         event.getDrops().clear();
 
-        // Handle experience (unchanged)
         if (plugin.isExperiencePickupEnabled()) {
             int expToDrop = event.getDroppedExp();
             if (expToDrop > 0) {
@@ -280,9 +281,12 @@ public class TelekinesisListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onMythicMobDeath(MythicMobDeathEvent event) {
+        // Skip if MythicMobs isn't installed
+        if (Bukkit.getPluginManager().getPlugin("MythicMobs") == null) return;
+
         Player player = (Player) event.getKiller();
         if (player == null || !plugin.isTelekinesisEnabled(player) || !plugin.isMythicMobsPickupEnabled()) {
-            return; // Skip if MythicMobs pickup is disabled
+            return;
         }
 
         // Check if PreventOtherDrops is enabled for this mob
