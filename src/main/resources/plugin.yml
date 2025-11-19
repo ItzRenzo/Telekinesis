@@ -1,5 +1,5 @@
 name: Telekinesis
-version: '1.5.2'
+version: '1.5.5'
 main: net.itzrenzo.telekinesis.Telekinesis
 api-version: '1.17'
 authors: [ ItzRenzo ]

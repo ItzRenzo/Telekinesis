@@ -1,5 +1,17 @@
 package net.itzrenzo.telekinesis;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -9,11 +21,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.File;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.*;
 
 public class Telekinesis extends JavaPlugin {
     private FileConfiguration config;
@@ -196,6 +203,10 @@ public class Telekinesis extends JavaPlugin {
 
     public boolean isMythicMobsPickupEnabled() {
         return config.getBoolean("enable-mythicmobs-pickup", true);
+    }
+
+    public boolean shouldSkipCustomNBTItems() {
+        return config.getBoolean("skip-custom-nbt-items", true);
     }
 
     public boolean isTelekinesisEnabled(Player player) {

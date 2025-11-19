@@ -18,6 +18,10 @@ enable-experience-pickup-message: false
 # Enable auto-pickup for MythicMobs drops (requires MythicMobs)
 enable-mythicmobs-pickup: true
 
+# Skip items with custom NBT data to prevent duplication with plugins like ExecutableItems, ItemsAdder, etc.
+# Set to false if you want to force telekinesis on all items (may cause duplication)
+skip-custom-nbt-items: true
+
 # Global blacklist for items (use lowercase material names)
 # Item IDs can be found in (https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html)
 # Example.
