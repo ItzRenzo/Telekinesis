@@ -1,7 +1,7 @@
 name: Telekinesis
 version: '1.5.5'
 main: net.itzrenzo.telekinesis.Telekinesis
-api-version: '1.17'
+api-version: '1.21'
 authors: [ ItzRenzo ]
 soft-depend: [WorldGuard, MythicMobs]
 commands:
