@@ -73,18 +73,15 @@ public class TelekinesisListener implements Listener {
         Block block = event.getBlock();
         Material type = block.getType();
 
-        // Handle plants first
         if (type == Material.KELP || type == Material.KELP_PLANT || type == Material.SUGAR_CANE || type == Material.CACTUS || type == Material.BAMBOO) {
             handlePlantBreak(player, block, event);
             return;
         }
 
-        // Check if the block is a container, but not a Shulker Box
         if (block.getState() instanceof Container && !isShulkerBox(block)) {
             Container container = (Container) block.getState();
             Inventory inventory = container.getInventory();
 
-            // Check if the container is not empty
             if (!inventory.isEmpty()) {
                 event.setCancelled(true);
                 sendContainerNotEmptyWarning(player);
@@ -92,18 +89,15 @@ public class TelekinesisListener implements Listener {
             }
         }
 
-        // Special handling for beds
         if (block.getBlockData() instanceof Bed) {
             event.setCancelled(true);
             handleBedBreak(player, block);
         } else {
-            // Handle regular block drops (including Shulker Boxes)
             Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand());
             handleDrops(player, drops, block.getLocation());
             event.setDropItems(false);
         }
 
-        // Handle experience drops
         if (plugin.isExperiencePickupEnabled()) {
             int expToDrop = event.getExpToDrop();
             if (expToDrop > 0) {
@@ -122,7 +116,6 @@ public class TelekinesisListener implements Listener {
             List<Block> blocksToBreak = new ArrayList<>();
             Block current = block;
 
-            // Only break blocks ABOVE the broken one
             do {
                 blocksToBreak.add(current);
                 current = current.getRelative(BlockFace.UP);
@@ -185,20 +178,15 @@ public class TelekinesisListener implements Listener {
             bedHead = block.getRelative(bed.getFacing());
         }
 
-        // Create the bed item using the head part's material
         Material bedMaterial = bedHead.getType();
         ItemStack bedItem = new ItemStack(bedMaterial);
 
-        // Add the bed directly to the player's inventory or drop it if inventory is full
         if (player.getInventory().addItem(bedItem).isEmpty()) {
-            // Item was added successfully
         } else {
-            // Inventory is full, drop the item
             player.getWorld().dropItemNaturally(player.getLocation(), bedItem);
             sendInventoryFullWarning(player);
         }
 
-        // Remove both parts of the bed
         bedHead.setType(Material.AIR);
         bedFoot.setType(Material.AIR);
     }
@@ -210,7 +198,6 @@ public class TelekinesisListener implements Listener {
     private void checkMythicMobsAvailability() {
         if (Bukkit.getPluginManager().getPlugin("MythicMobs") != null) {
             try {
-                // Try to access MythicMobs API to ensure it's properly loaded
                 MythicBukkit.inst().getMobManager();
                 mythicMobsAvailable = true;
                 plugin.getLogger().info("MythicMobs integration enabled.");
@@ -233,13 +220,11 @@ public class TelekinesisListener implements Listener {
         Player player = event.getEntity().getKiller();
         if (player == null || !plugin.isTelekinesisEnabled(player)) return;
 
-        // Check if MythicMobs is available and properly loaded
         boolean isMythicMob = false;
         if (mythicMobsAvailable) {
             try {
                 isMythicMob = MythicBukkit.inst().getMobManager().isMythicMob(event.getEntity());
             } catch (Exception | NoClassDefFoundError e) {
-                // If error occurs, disable MythicMobs integration
                 mythicMobsAvailable = false;
                 if (!mythicMobsErrorLogged) {
                     plugin.getLogger().warning("MythicMobs integration disabled due to API error.");
@@ -248,10 +233,8 @@ public class TelekinesisListener implements Listener {
             }
         }
 
-        // Skip vanilla drops if PreventOtherDrops is active (handled in MythicMobDeathEvent)
         if (isMythicMob) return;
 
-        // Handle vanilla drops for non-MythicMobs entities
         handleDrops(player, event.getDrops(), event.getEntity().getLocation());
         event.getDrops().clear();
 
@@ -269,35 +252,30 @@ public class TelekinesisListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     public void onEntityPickupItem(EntityPickupItemEvent event) {
-        // Only handle player pickups
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
         
         Player player = (Player) event.getEntity();
         
-        // Only proceed if telekinesis is enabled for this player
         if (!plugin.isTelekinesisEnabled(player)) {
             return;
         }
         
         ItemStack item = event.getItem().getItemStack();
         
-        // Check if item is blacklisted
         if (plugin.isItemBlacklisted(player, item.getType().name().toLowerCase())) {
-            return; // Let normal pickup happen for blacklisted items
+            return; 
         }
         
         // Check if item has custom NBT data (from ExecutableItems, ItemsAdder, etc.)
         // These items should be handled by their respective plugins to avoid duplication
         if (plugin.shouldSkipCustomNBTItems() && hasCustomNBT(item)) {
-            return; // Let the custom item plugin handle the pickup
+            return;
         }
         
-        // Cancel the event to prevent default pickup behavior
         event.setCancelled(true);
         
-        // Check if player has inventory space
         if (player.getInventory().firstEmpty() != -1) {
             player.getInventory().addItem(item);
             event.getItem().remove();
@@ -315,24 +293,20 @@ public class TelekinesisListener implements Listener {
             return false;
         }
         
-        // Check for common custom item plugin NBT keys
         try {
             var meta = item.getItemMeta();
             if (meta == null) {
                 return false;
             }
             
-            // ExecutableItems typically adds custom model data or special NBT
             if (meta.hasCustomModelData()) {
                 return true;
             }
             
-            // Check for persistent data container keys (used by many custom item plugins)
             if (!meta.getPersistentDataContainer().getKeys().isEmpty()) {
                 return true;
             }
         } catch (Exception e) {
-            // If there's any error checking NBT, assume it's safe to handle normally
             return false;
         }
         
@@ -360,7 +334,6 @@ public class TelekinesisListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onMythicMobDeath(MythicMobDeathEvent event) {
-        // Skip if MythicMobs isn't available or properly loaded
         if (!mythicMobsAvailable) return;
 
         Player player = (Player) event.getKiller();
@@ -369,21 +342,17 @@ public class TelekinesisListener implements Listener {
         }
 
         try {
-            // Check if PreventOtherDrops is enabled for this mob
             boolean preventOtherDrops = event.getMobType().getConfig().getBoolean("Options.PreventOtherDrops", false);
 
-            // Get MythicMobs drops (custom drops)
             List<ItemStack> mythicDrops = new ArrayList<>(event.getDrops());
             handleDrops(player, mythicDrops, event.getEntity().getLocation());
             event.getDrops().clear();
 
-            // If PreventOtherDrops is enabled, also clear vanilla drops
             if (preventOtherDrops) {
                 event.getEntity().getWorld().getLivingEntities().remove(event.getEntity());
                 event.getEntity().remove();
             }
         } catch (Exception | NoClassDefFoundError e) {
-            // Disable MythicMobs integration if error occurs
             mythicMobsAvailable = false;
             if (!mythicMobsErrorLogged) {
                 plugin.getLogger().warning("MythicMobs integration disabled due to API error.");
